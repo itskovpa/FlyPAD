@@ -22,7 +22,7 @@ function varargout = TABLA_1_04_2013(varargin)
 
 % Edit the above text to modify the response to help TABLA_1_04_2013
 
-% Last Modified by GUIDE v2.5 01-Apr-2013 14:56:01
+% Last Modified by GUIDE v2.5 02-Apr-2013 15:15:33
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -69,16 +69,30 @@ guidata(hObject, handles);
 % % end
 % fopen(s);
 % s.BytesAvailableFcn =  {'MyCallBack',BytesToRead};%{'mycallback',time
-setappdata(0  , 'TableHandle'    , handles.uitable1);
+
+
+GuiHandles=gcf;
+setappdata(0,'GuiHandles',GuiHandles);
+%% Save handles to uitable to a 'TableHandle' in root (0)
+GuiHandles=getappdata(0,'GuiHandles');
+
+setappdata(GuiHandles  , 'TableHandle'    , handles.uitable1);
 BytesToRead=640;
-setappdata(0,'BytesToRead',BytesToRead);
+setappdata(GuiHandles,'BytesToRead',BytesToRead);
+%% Set default Channel to Read and save it to 'Channel' in root (0)
+Channel=1;
+setappdata(GuiHandles,'Channel',Channel);
+
 % UIWAIT makes TABLA_1_04_2013 wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
-global BaudRate
-BaudRate=get(handles.BaudRate,'String');
-BaudRate=str2num(BaudRate);
-global M
-M(1,1:32)=1:32;
+setappdata(GuiHandles,'BaudRate',str2double(get(handles.BaudRate,'String')));
+% global BaudRate
+% BaudRate=get(handles.BaudRate,'String');
+% BaudRate=str2num(BaudRate);
+%% set a variable to write the header of the file (channel numbers)
+% global header
+FileHeader(1,1:32)=1:32;
+setappdata(GuiHandles,'FileHeader',FileHeader);
 
 % --- Outputs from this function are returned to the command line.
 function varargout = TABLA_1_04_2013_OutputFcn(hObject, eventdata, handles) 
@@ -121,25 +135,28 @@ function CloseButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global s
-try
-rmappdata(0,'BytesToRead');
-% rmappdata(0,'TableHandle');
-% rmappdata(0,'filename');
-catch
-end
-try
-% rmappdata(0,'BytesToRead');
-rmappdata(0,'TableHandle');
-% rmappdata(0,'filename');
-catch
-end
 
-try
+rmappdata(0,'GuiHandles');
+% 
+% try
 % rmappdata(0,'BytesToRead');
+% % rmappdata(0,'TableHandle');
+% % rmappdata(0,'filename');
+% catch
+% end
+% try
+% % rmappdata(0,'BytesToRead');
 % rmappdata(0,'TableHandle');
- rmappdata(0,'filename');
-catch
-end
+% % rmappdata(0,'filename');
+% catch
+% end
+% 
+% try
+% % rmappdata(0,'BytesToRead');
+% % rmappdata(0,'TableHandle');
+%  rmappdata(0,'filename');
+% catch
+% end
 % rmappdata(0,'pathname');
 fclose(s)
 delete(s)
@@ -153,9 +170,10 @@ function BytesToRead_Callback(hObject, eventdata, handles)
 % hObject    handle to BytesToRead (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+GuiHandles=getappdata(0,'GuiHandles');
 
 BytesToRead=str2double(get(hObject,'String'));
-setappdata(0,'BytesToRead',BytesToRead);
+setappdata(GuiHandles,'BytesToRead',BytesToRead);
 % Hints: get(hObject,'String') returns contents of BytesToRead as text
 %         returns contents of BytesToRead as a double
 % global s
@@ -190,13 +208,18 @@ function OpenPortButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global s 
-global BaudRate
+% global BaudRate
+GuiHandles=getappdata(0,'GuiHandles');
+
 s = serial('COM11');
+BaudRate=getappdata(GuiHandles,'BaudRate');
+
  set(s,'BaudRate',BaudRate);
 set(s,'BytesAvailableFcnMode','byte');
 set(s,'InputBufferSize',65536);
 % set(s,'OutputBufferSize',1);
-BytesToRead=getappdata(0,'BytesToRead');
+
+BytesToRead=getappdata(GuiHandles,'BytesToRead');
 % if isappdata(0,'BytesToRead');
 set(s,'BytesAvailableFcnCount',BytesToRead);
 %  s.ReadAsyncMode = 'manual';
@@ -278,3 +301,44 @@ end
 % global M
 % 
 % dlmwrite(filename, M, '-append')
+
+
+% --- Executes on button press in checkbox1.
+function checkbox1_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox1
+ plotData=get(hObject,'Value');
+ if plotData==1
+     figure(1)
+ else
+     close (1)
+ end
+
+
+
+function ChannelSelector_Callback(hObject, eventdata, handles)
+% hObject    handle to ChannelSelector (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of ChannelSelector as text
+%        str2double(get(hObject,'String')) returns contents of ChannelSelector as a double
+Channel=str2double(get(hObject,'String'));
+GuiHandles=getappdata(0,'GuiHandles');
+
+setappdata(GuiHandles,'Channel',Channel);
+
+% --- Executes during object creation, after setting all properties.
+function ChannelSelector_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ChannelSelector (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
